@@ -21,8 +21,6 @@ class config:
     
     ## Dataset
     input_dir = '.'
-    if os.path.exists('kaggle/input'):
-        input_dir = '../input/ranzcr-clip-catheter-line-classification'
     img_col = 'StudyInstanceUID'
     label_cols = [
         'ETT - Abnormal', 'ETT - Borderline',
@@ -30,7 +28,7 @@ class config:
         'NGT - Incompletely Imaged', 'NGT - Normal', 'CVC - Abnormal',
         'CVC - Borderline', 'CVC - Normal','Swan Ganz Catheter Present'
     ]
-    batch_size = 16
+    batch_size = 32
     image_size = 512
     num_workers = 2
     pin_memory = True
@@ -53,14 +51,14 @@ class config:
     debug = False                  # Get a few samples for debugging
 
 
-def train_one_epoch(model, loader, criterion, optimizer, scaler, device, config):
+def train_one_epoch(model, loader, criterion, optimizer, scaler, config):
     model.train()
     running_loss = AverageMeter()
     tepoch = tqdm(loader)
     # with tqdm(total=len(loader)) as tepoch:
     for batch_idx, (data, targets) in enumerate(tepoch):
-        data = data.to(device) 
-        targets = targets.to(device)
+        data = data.to(config.device) 
+        targets = targets.to(config.device)
 
         # Forward pass
         with torch.cuda.amp.autocast():
@@ -81,7 +79,7 @@ def train_one_epoch(model, loader, criterion, optimizer, scaler, device, config)
     return running_loss.avg
 
 
-def valid_one_epoch(model, loader, criterion, device, config):
+def valid_one_epoch(model, loader, criterion, config):
     model.eval()
     running_loss = AverageMeter()
     preds = []
@@ -90,7 +88,7 @@ def valid_one_epoch(model, loader, criterion, device, config):
     tepoch = tqdm(loader)
     with torch.no_grad():
         for batch_idx, (data, targets) in enumerate(tepoch):
-            data, targets = data.to(device), targets.to(device)
+            data, targets = data.to(config.device), targets.to(config.device)
 
             # Forward pass
             outputs = model(data)
@@ -115,7 +113,7 @@ def valid_one_epoch(model, loader, criterion, device, config):
 
 def run(fold, config):
     # Prepare train and val set
-    full_train_df = pd.read_csv(f'{config.input_dir}/train_v2.csv')  
+    full_train_df = pd.read_csv(f'{config.input_dir}/train_fold{config.kfold}.csv')  
     train_df = full_train_df.query(f"fold!={fold}")
     val_df = full_train_df.query(f"fold=={fold}")
 
@@ -135,11 +133,10 @@ def run(fold, config):
                             num_workers=config.num_workers, pin_memory=config.pin_memory)
 
     # Initialize model
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
     model = timm.create_model(config.model_name, pretrained=True, 
                               in_chans=config.in_chans, num_classes=config.num_classes,
                               drop_path_rate=config.drop_path_rate)
-    model = model.to(device)
+    model = model.to(config.device)
     n_parameters = sum(p.numel() for p in model.parameters() if p.requires_grad)
     print(f"Number of params: {n_parameters}")
     print(f"LR: {config.learning_rate}")
@@ -162,8 +159,8 @@ def run(fold, config):
     best_auc = 0
     for epoch in range(start_epoch, config.n_epochs):
         print(f'Fold: {fold}  Epoch: {epoch}  ', end='')
-        train_loss = train_one_epoch(model, train_loader, criterion, optimizer, scaler, device, config)
-        val_loss, auc = valid_one_epoch(model, val_loader, criterion, device, config)
+        train_loss = train_one_epoch(model, train_loader, criterion, optimizer, scaler, config)
+        val_loss, auc = valid_one_epoch(model, val_loader, criterion, config)
         print(f'AUC: {auc:.4f}')
 
         # Log to file
@@ -201,29 +198,8 @@ def run(fold, config):
 
 def main():
     set_seed(config.seed)
-    full_train_df = pd.read_csv(f'{config.input_dir}/train.csv')
-    full_train_df['combined_label'] = full_train_df[config.label_cols].astype('str').values.sum(axis=1)
-    full_train_df['combined_label'] = full_train_df['combined_label'].apply(lambda x: int(x, 2))
-    full_train_df['fold'] = -1
-    gkf = GroupKFold(n_splits=config.kfold)
-    for fold, (_, val_idx) in enumerate(gkf.split(full_train_df.index, 
-                                                y=full_train_df['combined_label'],
-                                                groups=full_train_df['PatientID'])):
-        full_train_df.loc[val_idx, 'fold'] = fold
-    full_train_df.to_csv(f'{config.input_dir}/train_v2.csv')
-
-    # # Plot fold distribution
-    # plt.figure(figsize=(8, 6))
-    # sns.countplot(x='fold', data=full_train_df)
-    # plt.show()
-
-    # # Plot fold distribution per label
-    # label_cnt_per_fold = full_train_df.groupby('fold')[config.label_cols].sum().stack().reset_index()
-    # label_cnt_per_fold.columns = ['fold', 'label', 'count']
-    # plt.figure(figsize=(10, 6))
-    # sns.barplot(x='count', y='label', hue='fold', 
-    #             data=label_cnt_per_fold.sort_values('count', ascending=False))
-    # plt.show()
+    if os.path.exists('kaggle/input'):
+        config.input_dir = '../input/ranzcr-clip-catheter-line-classification'
 
     # Train model
     for fold in range(config.kfold):

@@ -1,7 +1,9 @@
+from operator import imod
 import cv2
 from torch.utils.data import Dataset
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
+
 
 class RANZCRDataset(Dataset):
     def __init__(self, image_dir, df, img_col, label_cols, transform=None):
@@ -30,12 +32,12 @@ def build_transform(is_train, config):
             A.Resize(config.image_size, config.image_size),
             A.HorizontalFlip(p=0.5),
             A.RandomBrightnessContrast(brightness_limit=0.2, contrast_limit=0.2, p=0.5),
-            A.OneOf([
-              A.ImageCompression(),
-              A.Downscale(scale_min=0.1, scale_max=0.15),
-            ], p=0.2),
-            A.PiecewiseAffine(p=0.2),
-            A.Sharpen(p=0.2),
+            # A.OneOf([
+            #   A.ImageCompression(),
+            #   A.Downscale(scale_min=0.1, scale_max=0.15),
+            # ], p=0.2),
+            # A.PiecewiseAffine(p=0.2),
+            # A.Sharpen(p=0.2),
             A.HueSaturationValue(hue_shift_limit=40, sat_shift_limit=40, val_shift_limit=0, p=0.5),
             A.ShiftScaleRotate(shift_limit=0.2, scale_limit=0.3, rotate_limit=30, border_mode=0, p=0.5),
             A.CoarseDropout(max_height=int(config.image_size*0.2), max_width=int(config.image_size*0.2), 
