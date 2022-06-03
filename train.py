@@ -143,7 +143,7 @@ def run(fold, config):
     model = model.to(config.device)
     n_parameters = sum(p.numel() for p in model.parameters() if p.requires_grad)
     print(f"Number of params: {n_parameters}")
-    print(f"LR: {config.learning_rate}")
+    # print(f"LR: {config.learning_rate}")
 
     # Set up training
     start_epoch = 0
@@ -161,14 +161,16 @@ def run(fold, config):
             optimizer.load_state_dict(checkpoint['optimizer'])
             scheduler.load_state_dict(checkpoint['scheduler'])
             start_epoch = checkpoint['epoch'] + 1
+    print(f"LR: {scheduler.get_last_lr()[0]}")
 
     best_auc = 0
     for epoch in range(start_epoch, config.n_epochs):
-        print(f'Fold: {fold}  Epoch: {epoch}  ', end='')
+        print(f'Fold: {fold}  Epoch: {epoch}')
         train_loss = train_one_epoch(model, train_loader, criterion, optimizer, scaler, config)
         val_loss, auc = valid_one_epoch(model, val_loader, criterion, config)
         scheduler.step()
         print(f'AUC: {auc:.4f}')
+        print(f'New LR: {scheduler.get_last_lr()[0]}')
 
         # Log to file
         log_stats = {
