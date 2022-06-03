@@ -44,7 +44,11 @@ class config:
 
     ## Training
     n_epochs = 30
+    optimizer = 'AdamW'
     learning_rate = 1e-4
+    weight_decay = 1e-5
+    lr_scheduler = 'CosineAnnealingLR'
+    lr_scheduler_params = {'T_max': n_epochs, 'eta_min': 1e-6}
     resume = True                  # Resume training if True
     checkpoint_dir = 'checkpoint'  # Directory to save new checkpoints
     save_freq = 2                  # Number of checkpoints to save after each epoch
@@ -144,7 +148,8 @@ def run(fold, config):
     # Set up training
     start_epoch = 0
     criterion = nn.BCEWithLogitsLoss()
-    optimizer = optim.Adam(model.parameters(), lr=config.learning_rate)
+    optimizer = eval(f"optim.{config.optimizer}(model.parameters(), lr=config.learning_rate, weight_decay=config.weight_decay)")
+    scheduler = eval(f"optim.lr_scheduler.{config.lr_scheduler}(optimizer, **config.lr_scheduler_params)")
     scaler = torch.cuda.amp.GradScaler()
     writer = SummaryWriter()
 
@@ -161,6 +166,7 @@ def run(fold, config):
         print(f'Fold: {fold}  Epoch: {epoch}  ', end='')
         train_loss = train_one_epoch(model, train_loader, criterion, optimizer, scaler, config)
         val_loss, auc = valid_one_epoch(model, val_loader, criterion, config)
+        scheduler.step()
         print(f'AUC: {auc:.4f}')
 
         # Log to file
@@ -180,6 +186,7 @@ def run(fold, config):
         checkpoint = {
             'model': model.state_dict(),
             'optimizer': optimizer.state_dict(),
+            'scheduler': scheduler.state_dict(),
             'epoch': epoch,
         }            
         save_path = f"{config.checkpoint_dir}/fold={fold}-epoch={epoch}-auc={auc:.4f}.pth"
