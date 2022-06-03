@@ -14,6 +14,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 from dataset import *
+from model import *
 from utils import *
 
 
@@ -41,6 +42,8 @@ class config:
     in_chans = 3
     num_classes = len(label_cols)
     drop_path_rate = 0.1
+    pretrained = True               # True: load pretrained model, False: train from scratch
+    checkpoint_path = 'checkpoint/convnext_tiny_1k_224_ema_altered.pth'            # Path to model's pretrained weights
 
     ## Training
     n_epochs = 30
@@ -49,10 +52,10 @@ class config:
     weight_decay = 1e-5
     lr_scheduler = 'CosineAnnealingLR'
     lr_scheduler_params = {'T_max': n_epochs, 'eta_min': 1e-6}
-    resume = True                  # Resume training if True
-    checkpoint_dir = 'checkpoint'  # Directory to save new checkpoints
-    save_freq = 2                  # Number of checkpoints to save after each epoch
-    debug = False                  # Get a few samples for debugging
+    resume = True                   # Resume training if True
+    checkpoint_dir = 'checkpoint'   # Directory to save new checkpoints
+    save_freq = 2                   # Number of checkpoints to save after each epoch
+    debug = False                   # Get a few samples for debugging
 
 
 def train_one_epoch(model, loader, criterion, optimizer, scaler, config):
@@ -137,7 +140,8 @@ def run(fold, config):
                             num_workers=config.num_workers, pin_memory=config.pin_memory)
 
     # Initialize model
-    model = timm.create_model(config.model_name, pretrained=True, 
+    model = RANZCRClassifier(config.model_name, pretrained=config.pretrained,
+                              checkpoint_path=config.checkpoint_path, 
                               in_chans=config.in_chans, num_classes=config.num_classes,
                               drop_path_rate=config.drop_path_rate)
     model = model.to(config.device)

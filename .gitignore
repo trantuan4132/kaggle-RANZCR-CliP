@@ -129,4 +129,9 @@ dmypy.json
 .pyre/
 
 # others
+checkpoint
+train
+test
 train.csv
+train_annotation.csv
+sample_submission.csv
