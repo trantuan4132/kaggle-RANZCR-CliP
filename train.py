@@ -159,6 +159,7 @@ def run(fold, config):
         if checkpoint:
             model.load_state_dict(checkpoint['model'])
             optimizer.load_state_dict(checkpoint['optimizer'])
+            scheduler.load_state_dict(checkpoint['scheduler'])
             start_epoch = checkpoint['epoch'] + 1
 
     best_auc = 0
