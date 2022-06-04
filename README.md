@@ -7,6 +7,12 @@ git clone https://github.com/trantuan4132/kaggle-RANZCR-CliP
 cd kaggle-RANZCR-CliP
 ```
 
+## Set up environment
+
+```
+pip install -r requirements.txt
+```
+
 ## Data
 The dataset is available for downlading in a kaggle competition namely [RANZCR CLiP - Catheter and Line Position Challenge](https://www.kaggle.com/competitions/ranzcr-clip-catheter-line-classification).
 
