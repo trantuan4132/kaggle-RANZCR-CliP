@@ -43,7 +43,7 @@ class config:
     num_classes = len(label_cols)
     drop_path_rate = 0.1
     pretrained = True               # True: load pretrained model, False: train from scratch
-    checkpoint_path = 'checkpoint/convnext_tiny_1k_224_ema_altered.pth'            # Path to model's pretrained weights
+    checkpoint_path = ''            # Path to model's pretrained weights
 
     ## Training
     n_epochs = 30

@@ -12,16 +12,19 @@ def parse_args():
 
 def main():
     args = parse_args()
-    mod = importlib.import_module(f'timm.models.{args.model}')
-    if hasattr(mod, 'checkpoint_filter_fn'):
-        model = timm.create_model(args.variant, pretrained=False)
-        checkpoint = torch.load(args.checkpoint_path, map_location='cpu')
-        checkpoint = mod.checkpoint_filter_fn(checkpoint, model)
-        new_path = args.checkpoint_path.replace('.pth', '_altered.pth')
-        torch.save(checkpoint, new_path)
-        print("Preprocessed checkpoint saved to", new_path)
-    else:
-        print("No preprocessing function found or no need to preprocess")
+    try:
+        mod = importlib.import_module(f'timm.models.{args.model}')
+        if hasattr(mod, 'checkpoint_filter_fn'):
+            model = timm.create_model(args.variant, pretrained=False)
+            checkpoint = torch.load(args.checkpoint_path, map_location='cpu')
+            checkpoint = mod.checkpoint_filter_fn(checkpoint, model)
+            new_path = args.checkpoint_path.replace('.pth', '_altered.pth')
+            torch.save(checkpoint, new_path)
+            print("Preprocessed checkpoint saved to", new_path)
+        else:
+            print("No preprocessing function found or no need to preprocess")
+    except ModuleNotFoundError:
+        print(f'Model {args.model} not found')
 
 if __name__ == "__main__":
     main()
