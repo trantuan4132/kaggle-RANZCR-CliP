@@ -81,7 +81,7 @@ def train_one_epoch(model, loader, criterion, optimizer, scaler, config):
 
         # Forward pass
         with torch.cuda.amp.autocast():
-            outputs = model(data)
+            _, outputs = model(data)
             loss = criterion(outputs, targets)
 
         # Backward pass
@@ -110,7 +110,7 @@ def valid_one_epoch(model, loader, criterion, config):
             data, targets = data.to(config.device), targets.to(config.device)
 
             # Forward pass
-            outputs = model(data)
+            _, outputs = model(data)
             loss = criterion(outputs, targets)
             preds.append(outputs.cpu())
             gts.append(targets.cpu())

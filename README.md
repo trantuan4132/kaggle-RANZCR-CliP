@@ -16,7 +16,7 @@ pip install -r requirements.txt
 ## Data
 The dataset is available for downlading in a kaggle competition namely [RANZCR CLiP - Catheter and Line Position Challenge](https://www.kaggle.com/competitions/ranzcr-clip-catheter-line-classification).
 
-## Processing
+## Data Preprocessing
 There night be some mislabeled images so run `utils/preprocess_data.py` to relabel them
 ```
 python utils/preprocess_data.py

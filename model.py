@@ -9,8 +9,19 @@ class RANZCRClassifier(nn.Module):
         self.model = timm.create_model(model_name, pretrained=pretrained,
                                        checkpoint_path=checkpoint_path,
                                        drop_path_rate=drop_path_rate)
-        self.model.reset_classifier(num_classes=num_classes)
+        n_features = self.model.get_classifier().in_features
+        self.model.reset_classifier(num_classes=0)
+        self.global_pool = nn.AdaptiveAvgPool2d(1)
+        self.fc = nn.Linear(n_features, num_classes)
 
     def forward(self, x):
-        x = self.model(x)
-        return x
+        bs = x.size(0)
+        features = self.model(x)
+        pooled_features = self.pooling(features).view(bs, -1)
+        output = self.fc(pooled_features)
+        return features, output
+
+
+if __name__ == '__main__':
+    model = RANZCRClassifier('efficientnet-b0', pretrained=True)
+    print(model)
