@@ -133,5 +133,5 @@ checkpoint
 train
 test
 train.csv
-train_annotation.csv
+train_annotations.csv
 sample_submission.csv

@@ -24,11 +24,23 @@ class config:
     input_dir = '.'
     img_col = 'StudyInstanceUID'
     label_cols = [
-        'ETT - Abnormal', 'ETT - Borderline',
-        'ETT - Normal', 'NGT - Abnormal', 'NGT - Borderline',
-        'NGT - Incompletely Imaged', 'NGT - Normal', 'CVC - Abnormal',
-        'CVC - Borderline', 'CVC - Normal','Swan Ganz Catheter Present'
+        'ETT - Abnormal', 'ETT - Borderline', 'ETT - Normal', 
+        'NGT - Abnormal', 'NGT - Borderline', 'NGT - Incompletely Imaged', 'NGT - Normal', 
+        'CVC - Abnormal', 'CVC - Borderline', 'CVC - Normal', 
+        'Swan Ganz Catheter Present',
     ]
+    color_map = {'ETT - Abnormal': (255, 0, 0),
+        'ETT - Borderline': (0, 255, 0),
+        'ETT - Normal': (0, 0, 255),
+        'NGT - Abnormal': (255, 255, 0),
+        'NGT - Borderline': (255, 0, 255),
+        'NGT - Incompletely Imaged': (0, 255, 255),
+        'NGT - Normal': (128, 0, 0),
+        'CVC - Abnormal': (0, 128, 0),
+        'CVC - Borderline': (0, 0, 128),
+        'CVC - Normal': (128, 128, 0),
+        'Swan Ganz Catheter Present': (128, 0, 128),
+    }
     batch_size = 32
     image_size = 512
     num_workers = 2
@@ -46,7 +58,7 @@ class config:
     checkpoint_path = ''            # Path to model's pretrained weights
 
     ## Training
-    n_epochs = 30
+    n_epochs = 10
     optimizer = 'AdamW'
     learning_rate = 1e-4
     weight_decay = 1e-5
@@ -123,17 +135,27 @@ def run(fold, config):
     full_train_df = pd.read_csv(f'{config.input_dir}/train_fold{config.kfold}.csv')  
     train_df = full_train_df.query(f"fold!={fold}")
     val_df = full_train_df.query(f"fold=={fold}")
+    df_annot = pd.read_csv(f'{config.input_dir}/train_annotations.csv')
 
     if config.debug:
         train_df = train_df.sample(80)
         val_df = val_df.sample(640)
 
+    train_transform = [
+        build_transform(None, adjust_color=True, is_train=False, include_top=False),
+        build_transform(config.image_size, adjust_color=False, is_train=True, include_top=True)
+    ]
+    val_transform = build_transform(config.image_size, adjust_color=False, is_train=False, include_top=True)
+    
     train_dataset = RANZCRDataset(image_dir=f"{config.input_dir}/train", df=train_df, 
-                                  img_col=config.img_col, label_cols=config.label_cols, 
-                                  transform=build_transform(True, config))
+                                  img_col=config.img_col, label_cols=config.label_cols,
+                                  df_annot=df_annot, color_map=config.color_map, 
+                                  transform=train_transform[1],
+                                  prev_transform=train_transform[0])
     val_dataset = RANZCRDataset(image_dir=f"{config.input_dir}/train", df=val_df,
-                                img_col=config.img_col, label_cols=config.label_cols, 
-                                transform=build_transform(False, config))
+                                img_col=config.img_col, label_cols=config.label_cols,
+                                df_annot=df_annot, color_map=config.color_map, 
+                                transform=val_transform)
     train_loader = DataLoader(train_dataset, batch_size=config.batch_size, shuffle=True,
                               num_workers=config.num_workers, pin_memory=config.pin_memory)
     val_loader = DataLoader(val_dataset, batch_size=config.batch_size, shuffle=False,
