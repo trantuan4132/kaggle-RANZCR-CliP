@@ -10,6 +10,8 @@ def parse_args():
                         help='Path to the annotation file')
     parser.add_argument('--relabel_path', type=str, default='relabel.csv',
                         help='Path to the relabel file')
+    parser.add_argument('--drop', action='store_true',
+                        help='Drop the image id contained in the relabel file')
     return parser.parse_args()
 
 
@@ -20,11 +22,14 @@ def relabel(img_id, df, df_annot, img_col, annot_idx, old_label, new_label):
     return df, df_annot
 
 
-def clean_data(df_relabel, df, df_annot, img_col):
-    # img_id = '1.2.826.0.1.3680043.8.498.93345761486297843389996628528592497280'
-    for index, row in df_relabel.iterrows():
-        df, df_annot = relabel(row[img_col], df, df_annot, img_col, annot_idx=row['index'], 
-                               old_label=row['label'], new_label=row['new_label'])
+def clean_data(df_relabel, df, df_annot, img_col, drop=False):
+    if drop:
+        df = df.set_index(img_col).drop(df_relabel[img_col].unique()).reset_index()
+        df_annot = df_annot.set_index(img_col).drop(df_relabel[img_col].unique()).reset_index()
+    else:
+        for index, row in df_relabel.iterrows():
+            df, df_annot = relabel(row[img_col], df, df_annot, img_col, annot_idx=row['index'], 
+                                   old_label=row['label'], new_label=row['new_label'])
     return df, df_annot
 
 
@@ -40,8 +45,9 @@ if __name__ == "__main__":
     df_annot = pd.read_csv(args.annot_path)
     img_col = 'StudyInstanceUID'
     df_relabel = pd.read_csv(args.relabel_path, index_col=0)
-    df, df_annot = clean_data(df_relabel, df, df_annot, img_col)
+    df, df_annot = clean_data(df_relabel, df, df_annot, img_col, drop=args.drop)
+    # print(len(df), len(df_annot))
     # print(df.query(f"{img_col}=='1.2.826.0.1.3680043.8.498.93345761486297843389996628528592497280'"))
     # print(df_annot.query(f"{img_col}=='1.2.826.0.1.3680043.8.498.93345761486297843389996628528592497280'"))
-    # df.to_csv(args.label_path, index=False)
-    # df_annot.to_csv(args.annot_path, index=False)
+    df.to_csv(args.label_path, index=False)
+    df_annot.to_csv(args.annot_path, index=False)

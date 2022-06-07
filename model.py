@@ -10,8 +10,8 @@ class RANZCRClassifier(nn.Module):
                                        checkpoint_path=checkpoint_path,
                                        drop_path_rate=drop_path_rate)
         n_features = self.model.get_classifier().in_features
-        self.model.reset_classifier(num_classes=0)
-        self.global_pool = nn.AdaptiveAvgPool2d(1)
+        self.model.reset_classifier(num_classes=0, global_pool='')
+        self.pooling = nn.AdaptiveAvgPool2d(1)
         self.fc = nn.Linear(n_features, num_classes)
 
     def forward(self, x):
@@ -23,5 +23,7 @@ class RANZCRClassifier(nn.Module):
 
 
 if __name__ == '__main__':
-    model = RANZCRClassifier('efficientnet-b0', pretrained=True)
+    model = RANZCRClassifier('convnext_tiny', pretrained=False, 
+                             checkpoint_path='convnext_tiny_22k_1k_384_altered.pth')
+    # print(model(torch.randn(32, 3, 224, 224)))
     print(model)

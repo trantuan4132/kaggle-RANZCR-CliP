@@ -58,13 +58,21 @@ optional arguments:
 
 ### Stage 1: Teacher model training
 
-For training, run `train_stage_1.py` to train model (training customization can be done by modifying the configuration inside the file)
+For training, run `train_stage_1.py` to train teacher model (training customization can be done by modifying the configuration inside the file)
 
 ```
 python train_stage_1.py
 ```
 
+Then run `train_stage_2_3.py` to train student model (training customization can be done by modifying the configuration inside the file)
+
+```
+python train_stage_2_3.py
+```
+
 **Note:** If pretrained weight is not available for downloading from timm by setting `pretrained=True`, try downloading it directly using link provided in timm repo then set `checkpoint_file=<downloaded-weight-file-path>` to load the weight. In case timm model fails to load due to the different format that the pretrained weight might have, run `utils/preprocess_checkpoint.py` (this will only work when timm provide the `checkpoint_filter_fn` in their implementation for the model specified)
+
+For instance, to train `convnext_tiny`, go to [https://github.com/rwightman/pytorch-image-models/blob/master/timm/models/convnext.py] and find the corresponding checkpoint link (Ex. [https://dl.fbaipublicfiles.com/convnext/convnext_tiny_22k_1k_384.pth]) provided inside the file then download into current directory and run `utils/preprocess_checkpoint.py` so a new checkpoint file with `_altered` at the end of the file name will be created.
 
 ```
 python utils/preprocess_checkpoint.py
@@ -77,6 +85,12 @@ optional arguments:
                         Path to the checkpoint file
   --model MODEL         Model name
   --variant VARIANT     Model variant
+```
+
+**Note:** An alternative to run all the commands provided is to run the `train.sh` file
+
+```
+sh train.sh
 ```
 
 <!-- ## Inference

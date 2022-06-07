@@ -5,7 +5,7 @@ import importlib
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--checkpoint_path', type=str, default='checkpoint/convnext_tiny_1k_224_ema.pth',
+    parser.add_argument('--checkpoint_path', type=str, default='convnext_tiny_22k_1k_384.pth',
                         help='Path to the checkpoint file')
     parser.add_argument('--model', type=str, default='convnext',
                         help='Model name')

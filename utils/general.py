@@ -35,7 +35,7 @@ class AverageMeter(object):
         self.avg = self.sum / self.count
 
 
-def load_checkpoint(checkpoint_path=None, fold=None, config=None):
+def load_checkpoint(checkpoint_path=None, fold=None, checkpoint_dir=None, postfix=''):
     checkpoint = None
     if checkpoint_path:
         # Load checkpoint given by the path
@@ -46,9 +46,9 @@ def load_checkpoint(checkpoint_path=None, fold=None, config=None):
         else:
             checkpoint = torch.load(checkpoint_path, map_location='cpu')
         print(f"Loaded checkpoint from {checkpoint_path}")
-    elif config and fold is not None:
+    elif checkpoint_dir and fold is not None:
         # Load checkpoint from the latest one
-        checkpoint_files = glob.glob(f"{config.checkpoint_dir}/fold=*-epoch=*.pth")
+        checkpoint_files = glob.glob(f"{checkpoint_dir}/fold=*-epoch=*{postfix}.pth")
         checkpoint_files = {f: int(re.search('epoch=(\d+)', f).group(1)) for f in checkpoint_files 
                             if int(re.search('fold=(\d+)', f).group(1)) == fold}
         if len(checkpoint_files) > 0:
@@ -56,16 +56,16 @@ def load_checkpoint(checkpoint_path=None, fold=None, config=None):
             checkpoint = torch.load(checkpoint_file, map_location='cpu')
     return checkpoint
 
-def save_checkpoint(checkpoint, save_path, config):
-    os.makedirs(config.checkpoint_dir, exist_ok=True)
+def save_checkpoint(checkpoint, save_path):
+    os.makedirs(os.path.split(save_path)[0], exist_ok=True)
     torch.save(checkpoint, save_path)
 
-def log_to_file(log_stats, log_file, config):
-    os.makedirs(config.checkpoint_dir, exist_ok=True)
-    with open(f"{config.checkpoint_dir}/{log_file}", mode="a", encoding="utf-8") as f:
+def log_to_file(log_stats, log_file, checkpoint_dir):
+    os.makedirs(checkpoint_dir, exist_ok=True)
+    with open(f"{checkpoint_dir}/{log_file}", mode="a", encoding="utf-8") as f:
         f.write(json.dumps(log_stats) + "\n")
 
 def log_file_to_df(log_file='log.txt'):
-    with open('log.txt') as fh:
+    with open(log_file) as fh:
         data = fh.read().replace('\n', ',')
         return pd.DataFrame(eval(f"[{data}]"))

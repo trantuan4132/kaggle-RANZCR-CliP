@@ -30,7 +30,7 @@ class RANZCRDataset(Dataset):
             cv2.polylines(image, np.int32([data]), isClosed=False, 
                           color=color_map[annot_row["label"]], thickness=15, lineType=16)
             for d in data:
-                cv2.circle(image, d, radius=15, 
+                cv2.circle(image, tuple(d), radius=15, 
                            color=color_map[annot_row["label"]], thickness=25)
         return image
 
@@ -46,19 +46,23 @@ class RANZCRDataset(Dataset):
         if self.df_annot is not None and self.color_map:
             if self.return_img == 'both':
                 annot_image = image.copy()
-                annot_image = self.draw_annotation(annot_image, self.df_annot, self.img_col, row[self.img_col], self.color_map)
+                annot_image = self.draw_annotation(annot_image, self.df_annot, self.img_col, 
+                                                   row[self.img_col], self.color_map)
             elif self.return_img == 'annot_image':
-                image = self.draw_annotation(image, self.df_annot, self.img_col, row[self.img_col], self.color_map)    
+                image = self.draw_annotation(image, self.df_annot, self.img_col, 
+                                             row[self.img_col], self.color_map)    
 
         if self.transform:
-            image = self.transform(image=image)['image']
             if annot_image is not None:
-                annot_image = self.transform(image=annot_image)['image']
+                transformed = self.transform(image=image, annot_image=annot_image)
+                image, annot_image = transformed['image'], transformed['annot_image']
+            else:
+                image = self.transform(image=image)['image']
         label = row[self.label_cols].values.astype('float')
         return (image, label) if annot_image is None else (image, annot_image, label)
 
 
-def build_transform(image_size=None, adjust_color=True, is_train=True, include_top=True, others=None):
+def build_transform(image_size=None, adjust_color=True, is_train=True, include_top=True, additional_targets=None):
     transform = []
     if image_size:
         transform.append(A.Resize(image_size, image_size))
@@ -89,8 +93,7 @@ def build_transform(image_size=None, adjust_color=True, is_train=True, include_t
             ),
             ToTensorV2(),
         ])
-    keypoint_params = A.KeypointParams(format='xy') if others == 'keypoints' else None
-    return A.Compose(transform, keypoint_params=keypoint_params)
+    return A.Compose(transform, additional_targets=additional_targets)
 
 
 if __name__ == "__main__":
@@ -121,7 +124,8 @@ if __name__ == "__main__":
     n_rows = 1
     n_cols = 2
     prev_transform = build_transform(image_size=None, adjust_color=True, is_train=False, include_top=False)
-    transform = build_transform(image_size=512, adjust_color=False, is_train=True, include_top=False)
+    transform = build_transform(image_size=512, adjust_color=False, is_train=True, 
+                                include_top=False, additional_targets={'annot_image': 'image'})
     # transform = build_transform(image_size=512, is_train=True, include_top=False)
     n_samples = n_rows * n_cols
     sample_dataset = RANZCRDataset(image_dir="train", df=df.sample(n_samples), 
