@@ -29,17 +29,14 @@ class config:
         'CVC - Abnormal', 'CVC - Borderline', 'CVC - Normal', 
         'Swan Ganz Catheter Present',
     ]
-    color_map = {'ETT - Abnormal': (255, 0, 0),
-        'ETT - Borderline': (0, 255, 0),
-        'ETT - Normal': (0, 0, 255),
-        'NGT - Abnormal': (255, 255, 0),
-        'NGT - Borderline': (255, 0, 255),
-        'NGT - Incompletely Imaged': (0, 255, 255),
-        'NGT - Normal': (128, 0, 0),
-        'CVC - Abnormal': (0, 128, 0),
-        'CVC - Borderline': (0, 0, 128),
-        'CVC - Normal': (128, 128, 0),
-        'Swan Ganz Catheter Present': (128, 0, 128),
+    color_map = {
+        'ETT': (255, 255, 0),
+        'NGT': (255, 0, 255),
+        'CVC': (0, 255, 255),
+        'Swan Ganz Catheter Present': (0, 128, 128),
+        'Normal': (255, 0, 0),
+        'Borderline': (0, 255, 0),
+        'Abnormal': (0, 0, 255),
     }
     batch_size = 32
     image_size = 512

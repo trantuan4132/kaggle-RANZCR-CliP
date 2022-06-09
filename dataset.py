@@ -27,11 +27,18 @@ class RANZCRDataset(Dataset):
         df = df_annot.query(f"{img_col} == '{img_id}'")
         for index, annot_row in df.iterrows():
             data = eval(annot_row['data'])
+            label = annot_row["label"].split(' - ')
             cv2.polylines(image, np.int32([data]), isClosed=False, 
-                          color=color_map[annot_row["label"]], thickness=15, lineType=16)
-            for d in data:
-                cv2.circle(image, tuple(d), radius=15, 
-                           color=color_map[annot_row["label"]], thickness=25)
+                          color=color_map[label[0]], thickness=15, lineType=16)
+            if len(label) > 1 and label[1] != 'Incompletely Imaged':
+                x_center, y_center = image.shape[1]/2, image.shape[0]/2
+                x, y = min([data[0], data[-1]], key=lambda x: (x[0]-x_center)**2 + (x[1]-y_center)**2)
+                cv2.circle(image, (x, y), radius=15, 
+                            color=color_map[label[1]], thickness=25)
+                # cv2.circle(image, tuple(data[0]), radius=15, 
+                #             color=color_map[label[1]], thickness=25)
+                # cv2.circle(image, tuple(data[-1]), radius=15, 
+                #             color=color_map[label[1]], thickness=25)
         return image
 
     def __getitem__(self, index):
@@ -109,17 +116,28 @@ if __name__ == "__main__":
     ]
     df = pd.read_csv('train.csv').iloc[[2601, 8783]]
     df_annot = pd.read_csv('train_annotations.csv')
-    color_map = {'ETT - Abnormal': (255, 0, 0),
-        'ETT - Borderline': (0, 255, 0),
-        'ETT - Normal': (0, 0, 255),
-        'NGT - Abnormal': (255, 255, 0),
-        'NGT - Borderline': (255, 0, 255),
-        'NGT - Incompletely Imaged': (0, 255, 255),
-        'NGT - Normal': (128, 0, 0),
-        'CVC - Abnormal': (0, 128, 0),
-        'CVC - Borderline': (0, 0, 128),
-        'CVC - Normal': (128, 128, 0),
-        'Swan Ganz Catheter Present': (128, 0, 128),
+    # color_map = {
+    #     'ETT - Abnormal': (255, 255, 0),
+    #     'ETT - Borderline': (255, 255, 0),
+    #     'ETT - Normal': (255, 255, 0),
+    #     'NGT - Abnormal': (255, 0, 255),
+    #     'NGT - Borderline': (255, 0, 255),
+    #     'NGT - Incompletely Imaged': (255, 0, 255),
+    #     'NGT - Normal': (255, 0, 255),
+    #     'CVC - Abnormal': (0, 255, 255),
+    #     'CVC - Borderline': (0, 255, 255),
+    #     'CVC - Normal': (0, 255, 255),
+    #     'Swan Ganz Catheter Present': (0, 0, 255),
+    #     'tip': (255, 0, 0),
+    # }
+    color_map = {
+        'ETT': (255, 255, 0),
+        'NGT': (255, 0, 255),
+        'CVC': (0, 255, 255),
+        'Swan Ganz Catheter Present': (0, 128, 128),
+        'Normal': (255, 0, 0),
+        'Borderline': (0, 255, 0),
+        'Abnormal': (0, 0, 255),
     }
     n_rows = 1
     n_cols = 2
