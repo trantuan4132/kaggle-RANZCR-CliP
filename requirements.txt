@@ -4,6 +4,7 @@ git+https://github.com/albu/albumentations
 opencv-python-headless==4.1.2.30
 tqdm
 sklearn
+grad-cam
 pandas
 matplotlib
 seaborn
