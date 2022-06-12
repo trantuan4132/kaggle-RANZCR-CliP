@@ -33,11 +33,16 @@ class config:
     drop_path_rate = 0.1
     pretrained = False                       # True: load pretrained model, False: train from scratch
     checkpoint_path = ''                    # Path to model's pretrained weights
-    checkpoint_dirs = {'convnext_tiny': ['student_checkpoint/fold=0-best-pre.pth',
-                                         'student_checkpoint/fold=1-best-pre.pth',
-                                         'student_checkpoint/fold=2-best-pre.pth',
-                                         'student_checkpoint/fold=3-best-pre.pth',
-                                         'student_checkpoint/fold=4-best-pre.pth']}
+    checkpoint_dirs = {'convnext_tiny': ['student_checkpoint/fold=0-best-post.pth',
+                                         'student_checkpoint/fold=1-best-post.pth',
+                                         'student_checkpoint/fold=2-best-post.pth',
+                                         'student_checkpoint/fold=3-best-post.pth',
+                                         'student_checkpoint/fold=4-best-post.pth']}
+    # checkpoint_dirs = {'convnext_tiny': ['student_checkpoint/fold=0-best-full.pth',
+    #                                      'student_checkpoint/fold=1-best-full.pth',
+    #                                      'student_checkpoint/fold=2-best-full.pth',
+    #                                      'student_checkpoint/fold=3-best-full.pth',
+    #                                      'student_checkpoint/fold=4-best-full.pth']}
     debug = True
 
 

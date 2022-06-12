@@ -1,4 +1,4 @@
-from operator import imod
+import os
 import cv2
 from torch.utils.data import Dataset
 import albumentations as A
@@ -31,19 +31,24 @@ class RANZCRDataset(Dataset):
             cv2.polylines(image, np.int32([data]), isClosed=False, 
                           color=color_map[label[0]], thickness=15, lineType=16)
             if len(label) > 1 and label[1] != 'Incompletely Imaged':
-                x_center, y_center = image.shape[1]/2, image.shape[0]/2
-                x, y = min([data[0], data[-1]], key=lambda x: (x[0]-x_center)**2 + (x[1]-y_center)**2)
-                cv2.circle(image, (x, y), radius=15, 
+                # x_center, y_center = image.shape[1]/2, image.shape[0]/2
+                # x, y = min([data[0], data[-1]], key=lambda x: (x[0]-x_center)**2 + (x[1]-y_center)**2)
+                # cv2.circle(image, (x, y), radius=15, 
+                #             color=color_map[label[1]], thickness=25)
+                cv2.circle(image, tuple(data[0]), radius=15, 
                             color=color_map[label[1]], thickness=25)
-                # cv2.circle(image, tuple(data[0]), radius=15, 
-                #             color=color_map[label[1]], thickness=25)
-                # cv2.circle(image, tuple(data[-1]), radius=15, 
-                #             color=color_map[label[1]], thickness=25)
+                cv2.circle(image, tuple(data[-1]), radius=15, 
+                            color=color_map[label[1]], thickness=25)
         return image
 
     def __getitem__(self, index):
-        row = self.df.iloc[index]
-        image = cv2.imread(f'{self.image_dir}/{row[self.img_col]}.jpg')[:, :, ::-1].astype(np.uint8)
+        if self.df is not None:
+            row = self.df.iloc[index]
+            image = cv2.imread(f'{self.image_dir}/{row[self.img_col]}.jpg')[:, :, ::-1].astype(np.uint8)
+            label = row[self.label_cols].values.astype('float')
+        else:
+            image = cv2.imread(f'{self.image_dir}/{os.listdir(self.image_dir)[index]}')[:, :, ::-1].astype(np.uint8)
+            label = np.zeros(len(self.label_cols))
 
         if self.prev_transform:
             image = self.prev_transform(image=image)['image']
@@ -65,7 +70,6 @@ class RANZCRDataset(Dataset):
                 image, annot_image = transformed['image'], transformed['annot_image']
             else:
                 image = self.transform(image=image)['image']
-        label = row[self.label_cols].values.astype('float')
         return (image, label) if annot_image is None else (image, annot_image, label)
 
 
@@ -114,7 +118,7 @@ if __name__ == "__main__":
         'CVC - Abnormal', 'CVC - Borderline', 'CVC - Normal', 
         'Swan Ganz Catheter Present',
     ]
-    df = pd.read_csv('train.csv').iloc[[2601, 8783]]
+    df = pd.read_csv('train.csv').iloc[[1994, 2601, 8783]]
     df_annot = pd.read_csv('train_annotations.csv')
     # color_map = {
     #     'ETT - Abnormal': (255, 255, 0),

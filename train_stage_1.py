@@ -1,12 +1,12 @@
 import os, glob
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 import torch.optim as optim
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 import timm
 from tqdm import tqdm
-from sklearn.model_selection import GroupKFold
 from sklearn.metrics import roc_auc_score
 import pandas as pd
 import numpy as np
@@ -59,12 +59,35 @@ class config:
     optimizer = 'AdamW'
     learning_rate = 1e-4
     weight_decay = 1e-5
-    lr_scheduler = 'CosineAnnealingLR'
-    lr_scheduler_params = {'T_max': n_epochs, 'eta_min': 1e-6}
+    lr_scheduler = 'CosineAnnealingWarmRestarts' # 'CosineAnnealingLR' #
+    lr_scheduler_params = {
+        # 'T_max': 5,
+        'T_0': 5, 'T_mult': 1,
+        'eta_min': 1e-6,
+    }
     resume = True                           # Resume training if True
     checkpoint_dir = 'teacher_checkpoint'   # Directory to save new checkpoints
     save_freq = 2                           # Number of checkpoints to save after each epoch
     debug = False                           # Get a few samples for debugging
+
+
+class FocalLoss(nn.Module):
+    def __init__(self, alpha=1, gamma=2, reduction='mean'):
+        super().__init__()
+        self.alpha = alpha
+        self.gamma = gamma
+        self.reduction = reduction
+
+    def forward(self, inputs, targets):
+        bce_loss = F.binary_cross_entropy_with_logits(
+            inputs, targets, reduction='none')
+        pt = torch.exp(-bce_loss)
+        focal_loss = self.alpha * (1. - pt)**self.gamma * bce_loss
+        if self.reduction == 'mean':
+            return focal_loss.mean()
+        elif self.reduction == 'sum':
+            return focal_loss.sum()
+        return focal_loss
 
 
 def train_one_epoch(model, loader, criterion, optimizer, scaler, config):
@@ -129,10 +152,11 @@ def valid_one_epoch(model, loader, criterion, config):
 
 def run(fold, config):
     # Prepare train and val set
-    full_train_df = pd.read_csv(f'{config.input_dir}/train_fold{config.kfold}.csv')  
+    full_train_df = pd.read_csv(f'{config.input_dir}/train_fold{config.kfold}.csv')
+    df_annot = pd.read_csv(f'{config.input_dir}/train_annotations.csv')
+    full_train_df = full_train_df.set_index(config.img_col).loc[df_annot[config.img_col].unique()].reset_index()
     train_df = full_train_df.query(f"fold!={fold}")
     val_df = full_train_df.query(f"fold=={fold}")
-    df_annot = pd.read_csv(f'{config.input_dir}/train_annotations.csv')
 
     if config.debug:
         train_df = train_df.sample(80)
@@ -170,7 +194,7 @@ def run(fold, config):
 
     # Set up training
     start_epoch = 0
-    criterion = nn.BCEWithLogitsLoss()
+    criterion = FocalLoss() # nn.BCEWithLogitsLoss()
     optimizer = eval(f"optim.{config.optimizer}(model.parameters(), lr=config.learning_rate, weight_decay=config.weight_decay)")
     scheduler = eval(f"optim.lr_scheduler.{config.lr_scheduler}(optimizer, **config.lr_scheduler_params)")
     scaler = torch.cuda.amp.GradScaler()
