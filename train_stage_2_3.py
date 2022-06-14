@@ -212,12 +212,13 @@ def train_one_epoch(model, teacher_model, loader, criterion, optimizer, scaler, 
     running_loss = AverageMeter()
     tepoch = tqdm(loader)
     # with tqdm(total=len(loader)) as tepoch:
-    for batch_idx, (data, annot_data, targets) in enumerate(tepoch):
-        data = data.to(config.device)
-        annot_data = annot_data.to(config.device) 
-        targets = targets.to(config.device)
-
+    for batch_idx, data in enumerate(tepoch):
         if stage == 'pre':
+            data, annot_data, targets = data
+            data = data.to(config.device)
+            annot_data = annot_data.to(config.device) 
+            targets = targets.to(config.device)
+            
             # Get teacher model's features
             with torch.no_grad():
                 teacher_features, _ = teacher_model(annot_data)
@@ -227,14 +228,23 @@ def train_one_epoch(model, teacher_model, loader, criterion, optimizer, scaler, 
                 features, outputs = model(data)
                 loss = criterion(features, teacher_features, outputs, targets)
         elif stage == 'post':
+            data, targets = data
+            data = data.to(config.device)
+            targets = targets.to(config.device)
+            
             # Forward pass
             with torch.cuda.amp.autocast():
                 _, outputs = model(data)
                 loss = criterion(outputs, targets)
         elif stage == 'full':
+            data, annot_data, targets = data
+            data = data.to(config.device)
+            annot_data = annot_data.to(config.device) 
+            targets = targets.to(config.device)
             has_annot = torch.any(torch.ne(data.reshape((data.shape[0], -1)), 
                                            annot_data.reshape((annot_data.shape[0], -1))), dim=1)
             annot_data = annot_data[has_annot]
+            
             # Get teacher model's features
             with torch.no_grad():
                 teacher_features, _ = teacher_model(annot_data)
