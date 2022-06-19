@@ -4,11 +4,34 @@ from torch.utils.data import Dataset
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
 import numpy as np
+from utils import draw_annotation
 
 
 class RANZCRDataset(Dataset):
     def __init__(self, image_dir, df, img_col, label_cols, df_annot=None, 
                  color_map=None, transform=None, prev_transform=None, return_img='image'):
+        """
+        Args:
+        -----
+        image_dir: str
+            Path to the image directory
+        df: pandas dataframe
+            Dataframe containing the image ids and labels
+        img_col: str
+            Name of the column containing the image id
+        label_cols: list
+            List of the names of the columns containing the labels
+        df_annot: pandas dataframe, optional
+            Dataframe containing the annotations
+        color_map: dict, optional
+            Dictionary containing the color for each class
+        transform: albumentations transform, optional
+            Albumentations transform to apply to the image
+        prev_transform: albumentations transform, optional
+            Albumentations transform to apply to the image before applying the transform
+        return_img: str, default 'image'
+            Whether to return the image ('image') or the annotation image ('annot_image') or both ('both')
+        """
         super(RANZCRDataset, self).__init__()
         self.image_dir = image_dir
         self.df = df
@@ -22,24 +45,6 @@ class RANZCRDataset(Dataset):
 
     def __len__(self):
         return len(self.df)
-
-    def draw_annotation(self, image, df_annot, img_col, img_id, color_map):
-        df = df_annot.query(f"{img_col} == '{img_id}'")
-        for index, annot_row in df.iterrows():
-            data = eval(annot_row['data'])
-            label = annot_row["label"].split(' - ')
-            cv2.polylines(image, np.int32([data]), isClosed=False, 
-                          color=color_map[label[0]], thickness=15, lineType=16)
-            if len(label) > 1 and label[1] != 'Incompletely Imaged':
-                # x_center, y_center = image.shape[1]/2, image.shape[0]/2
-                # x, y = min([data[0], data[-1]], key=lambda x: (x[0]-x_center)**2 + (x[1]-y_center)**2)
-                # cv2.circle(image, (x, y), radius=15, 
-                #             color=color_map[label[1]], thickness=25)
-                cv2.circle(image, tuple(data[0]), radius=15, 
-                            color=color_map[label[1]], thickness=25)
-                cv2.circle(image, tuple(data[-1]), radius=15, 
-                            color=color_map[label[1]], thickness=25)
-        return image
 
     def __getitem__(self, index):
         if self.df is not None:
@@ -58,11 +63,11 @@ class RANZCRDataset(Dataset):
         if self.df_annot is not None and self.color_map:
             if self.return_img == 'both':
                 annot_image = image.copy()
-                annot_image = self.draw_annotation(annot_image, self.df_annot, self.img_col, 
-                                                   row[self.img_col], self.color_map)
+                annot_image = draw_annotation(annot_image, self.df_annot, self.img_col, 
+                                              row[self.img_col], self.color_map)
             elif self.return_img == 'annot_image':
-                image = self.draw_annotation(image, self.df_annot, self.img_col, 
-                                             row[self.img_col], self.color_map)    
+                image = draw_annotation(image, self.df_annot, self.img_col, 
+                                        row[self.img_col], self.color_map)    
 
         if self.transform:
             if annot_image is not None:
@@ -74,6 +79,22 @@ class RANZCRDataset(Dataset):
 
 
 def build_transform(image_size=None, adjust_color=True, is_train=True, include_top=True, additional_targets=None):
+    """
+    Builds a transformations pipeline for the data.
+
+    Args:
+    -----
+    image_size: int, optional
+        The size of the image to be transformed.
+    adjust_color: bool, optional
+        Whether to randomly adjust the color of the image.
+    is_train: bool, optional
+        Whether the data is being used for training.
+    include_top: bool, optional
+        Whether to normalize and convert to tensor.
+    additional_targets: dict, optional
+        A dictionary of additional targets to be applied same transformation as the image.
+    """
     transform = []
     if image_size:
         transform.append(A.Resize(image_size, image_size))

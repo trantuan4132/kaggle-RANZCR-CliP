@@ -5,6 +5,24 @@ import timm
 class RANZCRClassifier(nn.Module):
     def __init__(self, model_name, pretrained=False, checkpoint_path='', 
                  in_chans=3, num_classes=1000, drop_path_rate=0.0, return_features=True):
+        """
+        Args:
+        -----
+        model_name: str
+            Name of the model to use.
+        pretrained: bool
+            Whether to load pretrained weights.
+        checkpoint_path: str
+            Path to model's pretrained weights.
+        in_chans: int
+            Number of input channels.
+        num_classes: int
+            Number of output classes.
+        drop_path_rate: float
+            Drop path rate for the DropPath function.
+        return_features: bool
+            Whether to return the features.
+        """
         super(RANZCRClassifier, self).__init__()
         self.model = timm.create_model(model_name, pretrained=pretrained,
                                        checkpoint_path=checkpoint_path,

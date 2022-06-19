@@ -1,4 +1,5 @@
 import os, glob
+import cv2
 import torch
 import pandas as pd
 import numpy as np
@@ -15,6 +16,41 @@ def set_seed(seed):
         torch.cuda.manual_seed_all(seed)
         torch.backends.cudnn.deterministic = True
         torch.backends.cudnn.benchmark = True
+
+
+def draw_annotation(image, df_annot, img_col, img_id, color_map):
+    """
+    Draws the annotations on the image
+
+    Args:
+    -----
+    image: numpy array
+        Image to draw the annotations on
+    df_annot: pandas dataframe
+        Dataframe containing the annotations
+    img_col: str
+        Name of the column containing the image id
+    img_id: str
+        Image id
+    color_map: dict
+        Dictionary containing the color for each class
+    """
+    df = df_annot.query(f"{img_col} == '{img_id}'")
+    for index, annot_row in df.iterrows():
+        data = eval(annot_row['data'])
+        label = annot_row["label"].split(' - ')
+        cv2.polylines(image, np.int32([data]), isClosed=False, 
+                      color=color_map[label[0]], thickness=15, lineType=16)
+        if len(label) > 1 and label[1] != 'Incompletely Imaged':
+            # x_center, y_center = image.shape[1]/2, image.shape[0]/2
+            # x, y = min([data[0], data[-1]], key=lambda x: (x[0]-x_center)**2 + (x[1]-y_center)**2)
+            # cv2.circle(image, (x, y), radius=15, 
+            #             color=color_map[label[1]], thickness=25)
+            cv2.circle(image, tuple(data[0]), radius=15, 
+                        color=color_map[label[1]], thickness=25)
+            cv2.circle(image, tuple(data[-1]), radius=15, 
+                        color=color_map[label[1]], thickness=25)
+    return image
 
 
 class AverageMeter(object):
@@ -36,6 +72,20 @@ class AverageMeter(object):
 
 
 def load_checkpoint(checkpoint_path=None, fold=None, checkpoint_dir=None, postfix=''):
+    """
+    Loads the checkpoint from the checkpoint_path or the latest checkpoint from the checkpoint_dir
+    
+    Args:
+    -----
+    checkpoint_path: str
+        Path to the checkpoint
+    fold: int
+        Fold number
+    checkpoint_dir: str
+        Path to the checkpoint directory
+    postfix: str
+        Postfix to add to the checkpoint name
+    """
     checkpoint = None
     if checkpoint_path:
         # Load checkpoint given by the path
@@ -57,10 +107,12 @@ def load_checkpoint(checkpoint_path=None, fold=None, checkpoint_dir=None, postfi
     return checkpoint
 
 def save_checkpoint(checkpoint, save_path):
+    """Saves the checkpoint to the save_path"""
     os.makedirs(os.path.split(save_path)[0], exist_ok=True)
     torch.save(checkpoint, save_path)
 
 def log_to_file(log_stats, log_file, checkpoint_dir):
+    """Saves the log to the log_file"""
     os.makedirs(checkpoint_dir, exist_ok=True)
     with open(f"{checkpoint_dir}/{log_file}", mode="a", encoding="utf-8") as f:
         f.write(json.dumps(log_stats) + "\n")

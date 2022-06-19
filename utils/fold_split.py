@@ -18,6 +18,22 @@ def parse_args():
 
 
 def fold_split(df_path, label_cols, kfold, df_annot_path='', save_path=''):
+    """
+    Split the dataset into kfold
+
+    Args:
+    -----
+    df_path: str
+        Path to the label file
+    label_cols: list
+        List of label columns
+    kfold: int
+        Number of folds
+    df_annot_path: str, optional
+        Path to the annotation file
+    save_path: str, optional
+        Path to the save file
+    """
     df = pd.read_csv(df_path)
     combined_label = pd.Series(df[label_cols].astype('str').values.sum(axis=1))
     if df_annot_path:
