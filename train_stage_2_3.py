@@ -103,9 +103,9 @@ class CustomLoss(nn.Module):
         self.weights = weights
         
     def forward(self, features, teacher_features, y_pred, labels):
-        consistency_loss = nn.MSELoss()(features.reshape(-1), teacher_features.reshape(-1))
+        distill_loss = nn.MSELoss()(features.reshape(-1), teacher_features.reshape(-1))
         cls_loss = FocalLoss()(y_pred, labels) # nn.BCEWithLogitsLoss()(y_pred, labels) #
-        loss = self.weights[0] * consistency_loss + self.weights[1] * cls_loss
+        loss = self.weights[0] * distill_loss + self.weights[1] * cls_loss
         return loss
 
     

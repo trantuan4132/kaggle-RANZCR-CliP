@@ -38,7 +38,7 @@ class RANZCRClassifier(nn.Module):
         features = self.model(x)
         pooled_features = self.pooling(features).view(bs, -1)
         output = self.fc(pooled_features)
-        return features, output if self.return_features else output
+        return (features, output) if self.return_features else output
 
 
 if __name__ == '__main__':

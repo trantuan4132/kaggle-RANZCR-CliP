@@ -116,8 +116,3 @@ def log_to_file(log_stats, log_file, checkpoint_dir):
     os.makedirs(checkpoint_dir, exist_ok=True)
     with open(f"{checkpoint_dir}/{log_file}", mode="a", encoding="utf-8") as f:
         f.write(json.dumps(log_stats) + "\n")
-
-def log_file_to_df(log_file='log.txt'):
-    with open(log_file) as fh:
-        data = fh.read().replace('\n', ',')
-        return pd.DataFrame(eval(f"[{data}]"))

@@ -93,6 +93,14 @@ optional arguments:
 sh train.sh
 ```
 
+## Demo
+
+Run `utils/cam_vis.py` to demo classification result with GradCAM
+
+```
+python utils/cam_vis.py
+```
+
 <!-- ## Inference
 For inferencing, run `inference.py` to generate predictions on the test set and the output file will be `submission.csv`
 

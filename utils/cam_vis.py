@@ -16,8 +16,8 @@ from utils import load_checkpoint
 class config:
     # Data
     image_paths = [
-        'train/1.2.826.0.1.3680043.8.498.10010621324226224265011850078370952894.jpg',
-        # 'train/1.2.826.0.1.3680043.8.498.40203216203080904288333836838469265651.jpg'
+        # 'train/1.2.826.0.1.3680043.8.498.10010621324226224265011850078370952894.jpg',
+        'train/1.2.826.0.1.3680043.8.498.40203216203080904288333836838469265651.jpg'
     ]
     # input_dir = '.'
     # img_col = 'StudyInstanceUID'
@@ -41,7 +41,7 @@ class config:
     drop_path_rate = 0.1
     pretrained = False                       # True: load pretrained model, False: train from scratch
     weight_path = ''                         # Path to model's pretrained weights
-    checkpoint_path = 'student_checkpoint/fold=0-best-full.pth'
+    checkpoint_path = 'student_checkpoint/fold=3-best-post.pth'
 
 
 def main():
@@ -77,7 +77,7 @@ def main():
     target_layers = [model.model.head.norm] # [model.model.stages[-1].blocks[-1].norm]
     cam = GradCAM(model=model, target_layers=target_layers, use_cuda=(config.device=='cuda'))
     for idx in range(len(input_tensor)):
-        tensor = torch.cat([input_tensor[idx].unsqueeze(0)])*len(targets[idx])
+        tensor = torch.cat([input_tensor[idx].unsqueeze(0)]*len(targets[idx]))
         grayscale_cams = cam(input_tensor=tensor, targets=targets[idx])
         n_rows = 1
         n_cols = 1 + len(targets[idx]) // n_rows
@@ -90,6 +90,7 @@ def main():
             axes.ravel()[i].imshow(visualization)
             axes.ravel()[i].set_title(config.label_cols[targets[idx][i-1].category])
             axes.ravel()[i].axis('off')
+        # plt.savefig(f'figure_{idx}.png')
         plt.show()
 
 
