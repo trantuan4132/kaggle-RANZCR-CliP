@@ -96,7 +96,7 @@ def main():
     for model in models:
         preds.append(predict(model, test_loader, config))
     preds = np.mean(preds, axis=0)
-    preds = (preds > 0.5).astype('int')
+    # preds = (preds > 0.5).astype('int')
     test_df[config.label_cols] = preds
     test_df.to_csv('submission.csv', index=False)
     print(test_df)
