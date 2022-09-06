@@ -53,6 +53,19 @@ def visualize_log_file(log_file='log.txt', metric='val_auc', title='Validation A
     plt.show()
 
 
+def visualize_log_files(log_files={'name': 'log.txt'}, metric='val_auc', title='Validation AUC'):
+    """Visualize data from dictionary containing pairs of method's name and log file"""
+    dfs = [log_file_to_df(log_file).assign(method=method) for method, log_file in log_files.items()]
+    df = pd.concat(dfs, axis=0, ignore_index=True)
+    if metric in df.columns:
+        plt.figure(figsize=(9,6))
+        sns.lineplot(x='epoch', y=metric, hue='method', 
+                    data=df.assign(fold=lambda x: x['fold'].astype('str')))
+        plt.title(title)
+    # plt.savefig('figure.png')
+    plt.show()
+
+
 def main():
     args = parse_args()
     if args.mode == 'best_score':

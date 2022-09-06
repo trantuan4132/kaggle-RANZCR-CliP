@@ -8,8 +8,9 @@ from utils import draw_annotation
 
 
 class RANZCRDataset(Dataset):
-    def __init__(self, image_dir, df, img_col, label_cols, df_annot=None, 
-                 color_map=None, transform=None, prev_transform=None, return_img='image'):
+    def __init__(self, image_dir, df, img_col, label_cols, df_annot=None, color_map=None,
+                 draw_type='line', draw_endpoint=True, drop_bg=False, 
+                 transform=None, prev_transform=None, return_img='image'):
         """
         Args:
         -----
@@ -25,6 +26,12 @@ class RANZCRDataset(Dataset):
             Dataframe containing the annotations
         color_map: dict, optional
             Dictionary containing the color for each class
+        draw_type: str, default 'line'
+            Type of drawing annotation onto images
+        draw_endpoint: bool, default True
+            Drawing tube endpoints with circles if set to True
+        drop_bg: bool, default False
+            Drop background by coloring it with black if set to True 
         transform: albumentations transform, optional
             Albumentations transform to apply to the image
         prev_transform: albumentations transform, optional
@@ -41,7 +48,10 @@ class RANZCRDataset(Dataset):
         self.label_cols = label_cols
         self.transform = transform
         self.prev_transform = prev_transform
-        self.return_img = return_img 
+        self.return_img = return_img
+        self.draw_type = draw_type
+        self.draw_endpoint = draw_endpoint 
+        self.drop_bg = drop_bg
 
     def __len__(self):
         return len(self.df)
@@ -62,12 +72,13 @@ class RANZCRDataset(Dataset):
         annot_image = None
         if self.df_annot is not None and self.color_map:
             if self.return_img == 'both':
-                annot_image = image.copy()
-                annot_image = draw_annotation(annot_image, self.df_annot, self.img_col, 
-                                              row[self.img_col], self.color_map)
+                annot_image = draw_annotation(image.copy(), self.df_annot, self.img_col, 
+                                              row[self.img_col], self.color_map, 
+                                              self.draw_type, self.draw_endpoint, self.drop_bg)
             elif self.return_img == 'annot_image':
                 image = draw_annotation(image, self.df_annot, self.img_col, 
-                                        row[self.img_col], self.color_map)    
+                                        row[self.img_col], self.color_map,
+                                        self.draw_type, self.draw_endpoint, self.drop_bg)    
 
         if self.transform:
             if annot_image is not None:
@@ -139,6 +150,9 @@ if __name__ == "__main__":
         'CVC - Abnormal', 'CVC - Borderline', 'CVC - Normal', 
         'Swan Ganz Catheter Present',
     ]
+    draw_type = 'line' 
+    draw_endpoint = True 
+    drop_bg = False
     df = pd.read_csv('train.csv').iloc[[1994, 2601, 8783]]
     df_annot = pd.read_csv('train_annotations.csv')
     # color_map = {
@@ -173,8 +187,10 @@ if __name__ == "__main__":
     n_samples = n_rows * n_cols
     sample_dataset = RANZCRDataset(image_dir="train", df=df.sample(n_samples), 
                                    img_col=img_col, label_cols=label_cols,
-                                   df_annot=df_annot, color_map=color_map, 
-                                   transform=transform, prev_transform=prev_transform, return_img='both')
+                                   df_annot=df_annot, color_map=color_map,
+                                   draw_type=draw_type, draw_endpoint=draw_endpoint, 
+                                   drop_bg=drop_bg, transform=transform, 
+                                   prev_transform=prev_transform, return_img='both')
     fig, axes = plt.subplots(n_rows, n_cols, figsize=(n_cols*4, n_rows*4))
     for i in range(n_samples):
         img, annot_img, label = sample_dataset[i]

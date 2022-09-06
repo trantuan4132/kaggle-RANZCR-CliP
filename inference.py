@@ -43,7 +43,7 @@ class config:
     #                                      'student_checkpoint/fold=2-best-full.pth',
     #                                      'student_checkpoint/fold=3-best-full.pth',
     #                                      'student_checkpoint/fold=4-best-full.pth']}
-    debug = True
+    debug = False
 
 
 def predict(model, loader, config):

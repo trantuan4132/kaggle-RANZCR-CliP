@@ -18,7 +18,8 @@ def set_seed(seed):
         torch.backends.cudnn.benchmark = True
 
 
-def draw_annotation(image, df_annot, img_col, img_id, color_map):
+def draw_annotation(self, image, df_annot, img_col, img_id, color_map, 
+                    draw_type='line', draw_endpoint=True, drop_bg=False):
     """
     Draws the annotations on the image
 
@@ -34,14 +35,30 @@ def draw_annotation(image, df_annot, img_col, img_id, color_map):
         Image id
     color_map: dict
         Dictionary containing the color for each class
+    draw_type: str, default 'line'
+        Type of drawing annotation onto images
+    draw_endpoint: bool, default True
+        Drawing tube endpoints with circles if set to True
+    drop_bg: bool, default False
+        Drop background by coloring it with black if set to True 
     """
     df = df_annot.query(f"{img_col} == '{img_id}'")
+    if drop_bg:
+        image = np.zeros_like(image)
     for index, annot_row in df.iterrows():
         data = eval(annot_row['data'])
-        label = annot_row["label"].split(' - ')
-        cv2.polylines(image, np.int32([data]), isClosed=False, 
-                      color=color_map[label[0]], thickness=15, lineType=16)
-        if len(label) > 1 and label[1] != 'Incompletely Imaged':
+        label = annot_row["label"]
+        if draw_type == 'line':
+            label = label.split(' - ')
+            cv2.polylines(image, np.int32([data]), isClosed=False, 
+                            color=color_map[label[0]], thickness=15, lineType=16)
+        elif draw_type == 'square':
+            annot_size = 50
+            for d in data:
+                image[d[1]-annot_size//2: d[1]+annot_size//2,
+                        d[0]-annot_size//2: d[0]+annot_size//2,
+                        :] = color_map[label]
+        if draw_endpoint and len(label) > 1 and label[1] != 'Incompletely Imaged':
             # x_center, y_center = image.shape[1]/2, image.shape[0]/2
             # x, y = min([data[0], data[-1]], key=lambda x: (x[0]-x_center)**2 + (x[1]-y_center)**2)
             # cv2.circle(image, (x, y), radius=15, 

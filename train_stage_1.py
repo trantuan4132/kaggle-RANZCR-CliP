@@ -18,7 +18,7 @@ from model import *
 from utils import *
 
 
-class config:
+class CFG:
     
     ## Dataset
     input_dir = '.'
@@ -38,6 +38,9 @@ class config:
         'Borderline': (0, 255, 0),
         'Abnormal': (0, 0, 255),
     }
+    draw_type = 'line' 
+    draw_endpoint = True 
+    drop_bg = False
     batch_size = 32
     image_size = 512
     num_workers = 2
@@ -69,6 +72,38 @@ class config:
     checkpoint_dir = 'teacher_checkpoint'   # Directory to save new checkpoints
     save_freq = 2                           # Number of checkpoints to save after each epoch
     debug = False                           # Get a few samples for debugging
+
+
+class CFG2(CFG):
+    drop_bg = True
+    checkpoint_dir = 'teacher_checkpoint-2'   # Directory to save new checkpoints
+
+
+class CFGLine(CFG):
+    draw_endpoint = False 
+    drop_bg = False
+    n_epochs = 20
+    checkpoint_dir = 'teacher_checkpoint-line'   # Directory to save new checkpoints
+
+
+class CFGSquare(CFG):
+    color_map = {
+        'ETT - Abnormal': (255, 0, 0),
+        'ETT - Borderline': (0, 255, 0),
+        'ETT - Normal': (0, 0, 255),
+        'NGT - Abnormal': (255, 255, 0),
+        'NGT - Borderline': (255, 0, 255),
+        'NGT - Incompletely Imaged': (0, 255, 255),
+        'NGT - Normal': (128, 0, 0),
+        'CVC - Abnormal': (0, 128, 0),
+        'CVC - Borderline': (0, 0, 128),
+        'CVC - Normal': (128, 128, 0),
+        'Swan Ganz Catheter Present': (128, 0, 128),
+    }
+    draw_type = 'square' 
+    draw_endpoint = False 
+    drop_bg = False
+    checkpoint_dir = 'teacher_checkpoint-square'   # Directory to save new checkpoints
 
 
 class FocalLoss(nn.Module):
@@ -171,12 +206,14 @@ def run(fold, config):
     train_dataset = RANZCRDataset(image_dir=f"{config.input_dir}/train", df=train_df, 
                                   img_col=config.img_col, label_cols=config.label_cols,
                                   df_annot=df_annot, color_map=config.color_map, 
-                                  transform=train_transform[1], prev_transform=train_transform[0], 
-                                  return_img='annot_image')
+                                  draw_type=config.draw_type, draw_endpoint=config.draw_endpoint, 
+                                  drop_bg=config.drop_bg, transform=train_transform[1], 
+                                  prev_transform=train_transform[0], return_img='annot_image')
     val_dataset = RANZCRDataset(image_dir=f"{config.input_dir}/train", df=val_df,
                                 img_col=config.img_col, label_cols=config.label_cols,
                                 df_annot=df_annot, color_map=config.color_map, 
-                                transform=val_transform, return_img='annot_image')
+                                draw_type=config.draw_type, draw_endpoint=config.draw_endpoint, 
+                                drop_bg=config.drop_bg, transform=val_transform, return_img='annot_image')
     train_loader = DataLoader(train_dataset, batch_size=config.batch_size, shuffle=True,
                               num_workers=config.num_workers, pin_memory=config.pin_memory)
     val_loader = DataLoader(val_dataset, batch_size=config.batch_size, shuffle=False,
@@ -256,6 +293,7 @@ def run(fold, config):
 
 
 def main():
+    config = CFG
     set_seed(config.seed)
     if os.path.exists('kaggle/input'):
         config.input_dir = '../input/ranzcr-clip-catheter-line-classification'

@@ -138,3 +138,4 @@ train_annotations.csv
 sample_submission.csv
 train_fold5.csv
 *.pth
+log

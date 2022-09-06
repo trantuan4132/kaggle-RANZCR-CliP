@@ -10,14 +10,15 @@ sys.path.append('.')
 
 from dataset import RANZCRDataset, build_transform
 from model import RANZCRClassifier
-from utils import load_checkpoint
+from utils import load_checkpoint, draw_annotation
 
 
 class config:
     # Data
     image_paths = [
         # 'train/1.2.826.0.1.3680043.8.498.10010621324226224265011850078370952894.jpg',
-        'train/1.2.826.0.1.3680043.8.498.65099289901933141784379322712832538823.jpg',
+        'train/1.2.826.0.1.3680043.8.498.10194345675984119655974387496567978508.jpg',
+        # 'train/1.2.826.0.1.3680043.8.498.65099289901933141784379322712832538823.jpg',
     ]
     # input_dir = '.'
     # img_col = 'StudyInstanceUID'
@@ -27,6 +28,15 @@ class config:
         'CVC - Abnormal', 'CVC - Borderline', 'CVC - Normal', 
         'Swan Ganz Catheter Present',
     ]
+    color_map = {
+        'ETT': (255, 255, 0),
+        'NGT': (255, 0, 255),
+        'CVC': (0, 255, 255),
+        'Swan Ganz Catheter Present': (0, 128, 128),
+        'Normal': (255, 0, 0),
+        'Borderline': (0, 255, 0),
+        'Abnormal': (0, 0, 255),
+    }
     # batch_size = 32
     image_size = 512
     # num_workers = 2
@@ -34,24 +44,29 @@ class config:
     # seed = 42
 
     # Model
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    device = 'cpu' if torch.cuda.is_available() else 'cpu'
     model_name = 'convnext_tiny'
     in_chans = 3
     num_classes = len(label_cols)
     drop_path_rate = 0.1
     pretrained = False                       # True: load pretrained model, False: train from scratch
     weight_path = ''                         # Path to model's pretrained weights
-    checkpoint_path = 'student_checkpoint/fold=3-best-post.pth'
+    checkpoint_path = 'teacher_checkpoint/fold=0-best.pth' # 'student_checkpoint/fold=3-best-post.pth' #
 
 
 def main():
+    import pandas as pd
+    df_annot = pd.read_csv('train_annotations.csv')
     transform = [
         build_transform(image_size=config.image_size, adjust_color=False, is_train=False, include_top=False),
         build_transform(image_size=None, adjust_color=False, is_train=False, include_top=True),
     ]
     images, input_tensor = [], []
     for image_path in config.image_paths:
-        image = cv2.imread(image_path)[:, :, ::-1]
+        image = cv2.imread(image_path)[:, :, ::-1].astype(np.uint8)
+        # image = np.zeros_like(image)
+        image = draw_annotation(image, df_annot, 'StudyInstanceUID', 
+                                image_path[image_path.rfind('/')+1:image_path.rfind('.')], config.color_map)
         image = transform[0](image=image)['image']
         images.append(image)
         input_tensor.append(transform[-1](image=image)['image'].unsqueeze(0))

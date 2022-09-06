@@ -18,7 +18,7 @@ from model import *
 from utils import *
 
 
-class config:
+class CFG:
     
     ## Dataset
     input_dir = '.'
@@ -38,6 +38,9 @@ class config:
         'Borderline': (0, 255, 0),
         'Abnormal': (0, 0, 255),
     }
+    draw_type = 'line' 
+    draw_endpoint = True 
+    drop_bg = False
     batch_size = 32
     image_size = 512
     num_workers = 2
@@ -57,7 +60,7 @@ class config:
     ## Training
     n_stages = 2
     n_epochs = {
-        'pre': 15,
+        'pre': 45,
         'post': 10,
         'full': 15,
     }
@@ -76,6 +79,40 @@ class config:
     checkpoint_dir = 'student_checkpoint'   # Directory to save new checkpoints
     save_freq = 2                           # Number of checkpoints to save after each epoch
     debug = False                           # Get a few samples for debugging
+
+
+class CFG2(CFG):
+    drop_bg = True
+    teacher_dir = 'teacher_checkpoint-2'      # Path to teacher's checkpoint
+    checkpoint_dir = 'student_checkpoint-2'   # Directory to save new checkpoints
+
+
+class CFGLine(CFG):
+    draw_endpoint = False 
+    drop_bg = False
+    teacher_dir = 'teacher_checkpoint-line'      # Path to teacher's checkpoint
+    checkpoint_dir = 'student_checkpoint-line'   # Directory to save new checkpoints
+
+
+class CFGSquare(CFG):
+    color_map = {
+        'ETT - Abnormal': (255, 0, 0),
+        'ETT - Borderline': (0, 255, 0),
+        'ETT - Normal': (0, 0, 255),
+        'NGT - Abnormal': (255, 255, 0),
+        'NGT - Borderline': (255, 0, 255),
+        'NGT - Incompletely Imaged': (0, 255, 255),
+        'NGT - Normal': (128, 0, 0),
+        'CVC - Abnormal': (0, 128, 0),
+        'CVC - Borderline': (0, 0, 128),
+        'CVC - Normal': (128, 128, 0),
+        'Swan Ganz Catheter Present': (128, 0, 128),
+    }
+    draw_type = 'square' 
+    draw_endpoint = False 
+    drop_bg = False
+    teacher_dir = 'teacher_checkpoint-square'      # Path to teacher's checkpoint
+    checkpoint_dir = 'student_checkpoint-square'   # Directory to save new checkpoints
 
 
 class FocalLoss(nn.Module):
@@ -131,14 +168,16 @@ def initialize_loader(fold, config, stage='pre'):
         val_transform = build_transform(config.image_size, adjust_color=False, is_train=False, include_top=True)
         
         train_dataset = RANZCRDataset(image_dir=f"{config.input_dir}/train", df=train_df, 
-                                    img_col=config.img_col, label_cols=config.label_cols,
-                                    df_annot=df_annot, color_map=config.color_map, 
-                                    transform=train_transform[1], prev_transform=train_transform[0], 
-                                    return_img='both')
+                                      img_col=config.img_col, label_cols=config.label_cols,
+                                      df_annot=df_annot, color_map=config.color_map, 
+                                      draw_type=config.draw_type, draw_endpoint=config.draw_endpoint, 
+                                      drop_bg=config.drop_bg, transform=train_transform[1], 
+                                      prev_transform=train_transform[0], return_img='both')
         val_dataset = RANZCRDataset(image_dir=f"{config.input_dir}/train", df=val_df,
                                     img_col=config.img_col, label_cols=config.label_cols,
                                     df_annot=df_annot, color_map=config.color_map, 
-                                    transform=val_transform, return_img='image')
+                                    draw_type=config.draw_type, draw_endpoint=config.draw_endpoint, 
+                                    drop_bg=config.drop_bg, transform=val_transform, return_img='image')
     elif stage == 'post':
         train_df = full_train_df.query(f"fold!={fold}")
         val_df = full_train_df.query(f"fold=={fold}")
@@ -151,8 +190,8 @@ def initialize_loader(fold, config, stage='pre'):
         val_transform = build_transform(config.image_size, adjust_color=False, is_train=False, include_top=True)
         
         train_dataset = RANZCRDataset(image_dir=f"{config.input_dir}/train", df=train_df, 
-                                    img_col=config.img_col, label_cols=config.label_cols,
-                                    transform=train_transform, return_img='image')
+                                      img_col=config.img_col, label_cols=config.label_cols,
+                                      transform=train_transform, return_img='image')
         val_dataset = RANZCRDataset(image_dir=f"{config.input_dir}/train", df=val_df,
                                     img_col=config.img_col, label_cols=config.label_cols,
                                     transform=val_transform, return_img='image')
@@ -377,6 +416,7 @@ def run(fold, config, stage='pre'):
 
 
 def main():
+    config = CFG
     set_seed(config.seed)
     if os.path.exists('kaggle/input'):
         config.input_dir = '../input/ranzcr-clip-catheter-line-classification'
