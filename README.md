@@ -75,7 +75,7 @@ python train_stage_2_3.py
 
 **Note:** If pretrained weight is not available for downloading from timm by setting `pretrained=True`, try downloading it directly using link provided in timm repo then set `checkpoint_file=<downloaded-weight-file-path>` to load the weight. In case timm model fails to load due to the different format that the pretrained weight might have, run `utils/preprocess_checkpoint.py` (this will only work when timm provide the `checkpoint_filter_fn` in their implementation for the model specified).
 
-For instance, to train `convnext_tiny`, go to [https://github.com/rwightman/pytorch-image-models/blob/master/timm/models/convnext.py] and find the corresponding checkpoint link (Ex. [https://dl.fbaipublicfiles.com/convnext/convnext_tiny_22k_1k_384.pth]) provided inside the file then download into current directory and run `utils/preprocess_checkpoint.py` so a new checkpoint file with `_altered` at the end of the file name will be created.
+For instance, to train `convnext_tiny`, go to https://github.com/rwightman/pytorch-image-models/blob/master/timm/models/convnext.py and find the corresponding checkpoint link (Ex. https://dl.fbaipublicfiles.com/convnext/convnext_tiny_22k_1k_384.pth) provided inside the file then download into current directory and run `utils/preprocess_checkpoint.py` so a new checkpoint file with `_altered` at the end of the file name will be created.
 
 ```
 python utils/preprocess_checkpoint.py
