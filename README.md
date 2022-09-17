@@ -61,13 +61,15 @@ optional arguments:
 
 ### Stage 1: Teacher model training
 
-For training, run `train_stage_1.py` to train teacher model (training customization can be done by modifying the configuration inside the file):
+Run `train_stage_1.py` to train teacher model (training customization can be done by modifying the configuration inside the file):
 
 ```
 python train_stage_1.py
 ```
 
-Then run `train_stage_2_3.py` to train student model (training customization can be done by modifying the configuration inside the file):
+### Stage 2: Student model training
+
+Run `train_stage_2_3.py` to train student model (training customization can be done by modifying the configuration inside the file):
 
 ```
 python train_stage_2_3.py
